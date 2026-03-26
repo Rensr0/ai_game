@@ -1,0 +1,108 @@
+# ⚔️ 修仙世界 - AI 文字冒险游戏
+
+基于 Python + Flask 的 AI 驱动修仙文字冒险游戏，融合修仙体系、回合制战斗、NPC 对话、动态内容生成等玩法。
+
+## ✨ 特性
+
+- **🤖 AI 驱动**：NPC 对话、场景描述、内容生成均由 AI（SiliconFlow / Qwen2.5）驱动
+- **⚔️ 回合制战斗**：技能系统、装备系统、丹药系统，策略丰富
+- **🗺️ 开放世界**：10+ 修仙风格区域，危险等级递进，随机遭遇
+- **📈 修仙体系**：炼气→筑基→金丹→元婴→化神→渡劫→大乘→飞升，八重境界
+- **💬 NPC 交互**：AI 生成 NPC 性格/背景，自由对话影响关系
+- **🧩 动态内容**：AI 按需生成物品、敌人、技能、区域，越玩越丰富
+- **📱 响应式 UI**：桌面端和移动端自适应，触控优化
+- **💾 存档系统**：支持 Web 端和 CLI 端同步存档
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Python 3.10+
+- pip
+
+### 安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/Rensr0/ai_game.git
+cd ai_game
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 配置 API（复制示例文件并填入你的 API Key）
+cp config/api_config.json.example config/api_config.json
+# 编辑 config/api_config.json，填入你的 SiliconFlow API Key
+```
+
+### 运行
+
+**Web 模式（推荐）：**
+
+```bash
+python3 web/app.py
+# 访问 http://localhost:5000
+```
+
+**CLI 模式：**
+
+```bash
+python3 main.py
+```
+
+## 🎮 游戏玩法
+
+| 操作 | 说明 |
+|------|------|
+| 🧘 修炼 | 打坐获得经验，突破境界解锁新技能 |
+| ⚔️ 战斗 | 进入新区域可能遭遇敌人，回合制战斗 |
+| 💬 对话 | 与 NPC 自由对话，影响关系触发任务 |
+| 🗺️ 探索 | 移动到不同区域，发现资源和敌人 |
+| 🏪 商店 | 购买丹药、装备、功法秘籍 |
+| 🧩 生成 | 点击按钮让 AI 动态生成更多游戏内容 |
+| ⌨️ 自由输入 | 输入任意行动描述，AI 自由解读 |
+
+## 📁 项目结构
+
+```
+ai_game/
+├── agents/          # AI 智能体（NPC、旁白、世界模拟等）
+├── core/            # 核心系统（引擎、战斗、物品、修仙、数据库）
+├── memory/          # 记忆系统（短期/长期，SQLite 存储）
+├── utils/           # 工具和配置
+├── web/             # Flask Web 服务 + 前端
+│   ├── app.py       # REST API
+│   └── static/      # 单页前端
+├── config/          # 配置文件
+├── data/            # 运行时数据（不提交到仓库）
+├── main.py          # CLI 入口
+└── requirements.txt
+```
+
+## 🔧 技术栈
+
+- **后端**：Python 3 / Flask / asyncio / aiohttp
+- **前端**：原生 HTML/CSS/JS（单页应用）
+- **数据库**：SQLite（游戏内容 + 记忆存储）
+- **AI**：SiliconFlow API（Qwen2.5-7B-Instruct）
+
+## 📝 开发计划
+
+### ✅ 已完成
+- [x] 基础游戏引擎（修仙、战斗、物品、NPC、任务、对话）
+- [x] Web 可视化界面 + CLI 命令行模式
+- [x] NPC AI 生成与对话系统
+- [x] 记忆系统（短期/长期）
+- [x] 动态内容生成系统（AI 按需生成物品/敌人/技能/区域）
+- [x] 移动端响应式适配
+- [x] 地图可视化、修仙进度动画、突破特效
+
+### 🔜 计划中
+- [ ] 更多敌人类型和战斗机制
+- [ ] 成就系统
+- [ ] 音效/背景音乐
+- [ ] 多人联机
+
+## 📄 License
+
+MIT

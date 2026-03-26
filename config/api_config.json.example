@@ -1,0 +1,9 @@
+{
+  "api": {
+    "base_url": "https://api.siliconflow.cn",
+    "api_key": "",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "timeout": 30,
+    "max_retries": 3
+  }
+}

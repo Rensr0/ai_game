@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>修仙世界 - AI文字冒险</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a1a;--panel:#111827;--panel2:#1a2236;--border:#2a3a5c;
+  --gold:#f59e0b;--gold2:#d97706;--green:#22c55e;--red:#ef4444;
+  --blue:#3b82f6;--purple:#a855f7;--cyan:#06b6d4;
+  --text:#e5e7eb;--text2:#9ca3af;--text3:#6b7280;
+}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* 顶部状态栏 */
+.top-bar{background:linear-gradient(90deg,#1a1a3e,#0f172a);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.top-bar .logo{font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.stat-chip{display:flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:13px;white-space:nowrap}
+.stat-chip .icon{font-size:14px}
+.stat-chip .val{color:var(--gold);font-weight:600}
+.top-bar .actions{margin-left:auto;display:flex;gap:8px}
+.top-bar .actions button{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .2s}
+.top-bar .actions button:hover{border-color:var(--gold);color:var(--gold)}
+
+/* 主布局 */
+.main-layout{display:flex;height:calc(100vh - 52px)}
+
+/* 左侧面板 */
+.left-panel{width:260px;min-width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.panel-title{font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 8px;border-bottom:1px solid var(--border)}
+
+/* 修仙面板 */
+.cult-card{padding:16px;text-align:center;border-bottom:1px solid var(--border)}
+.realm-name{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--gold),#fbbf24,var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.realm-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.exp-bar{margin-top:10px;background:#1e293b;border-radius:10px;height:8px;overflow:hidden;position:relative}
+.exp-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple),var(--cyan));border-radius:10px;transition:width .8s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.exp-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:expShimmer 2s ease-in-out infinite}
+@keyframes expShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.exp-text{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* 属性列表 */
+.stats-list{padding:12px 16px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
+.stat-row .label{color:var(--text2)}
+.stat-row .value{font-weight:600}
+.stat-row .hp{color:var(--green)}
+.stat-row .mp{color:var(--blue)}
+.stat-row .atk{color:var(--red)}
+.stat-row .def{color:var(--cyan)}
+.stat-row .gold-stat{color:var(--gold)}
+
+/* 技能列表 */
+.skill-list{padding:8px 16px}
+.skill-tag{display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;margin:2px;font-size:11px;color:var(--text2);cursor:default}
+.skill-tag:hover{border-color:var(--blue);color:var(--blue)}
+.skill-tag.active{border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,.1)}
+
+/* 中间主区域 */
+.center-panel{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* 叙事区 */
+.narration-area{flex:1;overflow-y:auto;padding:20px;scroll-behavior:smooth}
+.msg{margin-bottom:16px;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg .bubble{max-width:85%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.7}
+.msg.system .bubble{background:var(--panel2);border:1px solid var(--border);color:var(--text);margin:0 auto;max-width:100%;text-align:center;font-size:13px;color:var(--text3)}
+.msg.narrator .bubble{background:linear-gradient(135deg,#1a2744,#162035);border:1px solid #2a4a7c;color:#cbd5e1}
+.msg.player .bubble{background:linear-gradient(135deg,#1e3a5f,#1a3050);border:1px solid #2a5a9c;margin-left:auto}
+.msg.npc .bubble{background:linear-gradient(135deg,#2d1f3d,#251a35);border:1px solid #5a3d8a}
+.msg.combat .bubble{background:linear-gradient(135deg,#3d1f1f,#351a1a);border:1px solid #8a3d3d}
+.msg.reward .bubble{background:linear-gradient(135deg,#1f3d1f,#1a351a);border:1px solid #3d8a3d}
+.msg .label{font-size:11px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.msg.narrator .label{color:#60a5fa}
+.msg.player .label{color:#93c5fd}
+.msg.npc .label{color:#c084fc}
+.msg.combat .label{color:#f87171}
+.msg.reward .label{color:#4ade80}
+
+/* 操作选项 */
+.options-area{padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px}
+.opt-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .2s;max-width:100%;text-align:left}
+.opt-btn:hover{border-color:var(--gold);background:rgba(245,158,11,.1)}
+.opt-btn.combat-btn{border-color:var(--red);color:var(--red)}
+.opt-btn.combat-btn:hover{background:rgba(239,68,68,.1)}
+.opt-btn.skill-btn{border-color:var(--purple);color:var(--purple)}
+.opt-btn.skill-btn:hover{background:rgba(168,85,247,.1)}
+
+/* 输入区域 */
+.input-area{padding:12px 16px;border-top:1px solid var(--border);background:var(--panel);display:flex;gap:8px}
+.input-area input{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:10px;font-size:14px;outline:none}
+.input-area input:focus{border-color:var(--gold)}
+.input-area input::placeholder{color:var(--text3)}
+.input-area button{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#000;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;white-space:nowrap}
+.input-area button:hover{transform:scale(1.02)}
+
+/* 右侧面板 */
+.right-panel{width:280px;min-width:280px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+
+/* 地图 */
+.map-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.map-current{background:linear-gradient(135deg,#1a3a2a,#153025);border:1px solid var(--green);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.map-current .loc-name{font-size:15px;font-weight:700;color:var(--green)}
+.map-current .loc-desc{font-size:12px;color:var(--text3);margin-top:4px}
+.map-current .loc-danger{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:4px}
+.danger-stars{color:var(--gold)}
+.map-connections{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.conn-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s}
+.conn-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* 已知区域列表 */
+.region-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;font-size:12px;color:var(--text3);transition:all .2s;border:1px solid transparent}
+.region-item.current{background:rgba(34,197,94,.15);color:var(--green);font-weight:600;border:1px solid rgba(34,197,94,.3);animation:currentPulse 2s ease-in-out infinite}
+@keyframes currentPulse{0%,100%{box-shadow:0 0 0 rgba(34,197,94,0)}50%{box-shadow:0 0 8px rgba(34,197,94,.3)}}
+.region-item .region-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.region-item.current .region-dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.region-item .region-danger{margin-left:auto;font-size:10px}
+.region-item .region-reachable{font-size:9px;color:var(--cyan);margin-left:4px}
+.region-item.clickable{cursor:pointer}
+.region-item.clickable:hover{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
+/* 危险等级颜色 */
+.danger-low{color:#22c55e}.danger-mid{color:#f59e0b}.danger-high{color:#ef4444}.danger-extreme{color:#dc2626;text-shadow:0 0 4px rgba(220,38,38,.5)}
+
+/* NPC列表 */
+.npc-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.npc-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer;border-radius:6px;padding:6px 8px;transition:background .2s}
+.npc-item:hover{background:var(--panel2)}
+.npc-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.npc-info .npc-name{font-weight:600;font-size:13px}
+.npc-info .npc-role{font-size:11px;color:var(--text3)}
+
+/* 背包 */
+.inv-section{padding:12px 16px}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
+.inv-item{aspect-ratio:1;background:var(--panel2);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .2s;position:relative}
+.inv-item:hover{transform:scale(1.1);z-index:1}
+.inv-item .count{position:absolute;bottom:1px;right:3px;font-size:9px;color:var(--text2)}
+.inv-item[data-rarity="common"]{border-color:#6b7280}
+.inv-item[data-rarity="uncommon"]{border-color:var(--green)}
+.inv-item[data-rarity="rare"]{border-color:var(--blue)}
+.inv-item[data-rarity="epic"]{border-color:var(--purple)}
+.inv-item[data-rarity="legendary"]{border-color:var(--gold)}
+
+/* 任务 */
+.quest-section{padding:12px 16px}
+.quest-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px}
+.quest-item .quest-title{font-weight:600;color:var(--gold);font-size:13px}
+.quest-item .quest-desc{color:var(--text3);margin-top:2px}
+.quest-progress{margin-top:4px;background:#1e293b;border-radius:4px;height:4px;overflow:hidden}
+.quest-progress-fill{height:100%;background:var(--green);transition:width .5s}
+
+/* 标签页切换 */
+.tab-bar{display:flex;border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;padding:8px;text-align:center;font-size:12px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-btn:hover{color:var(--text)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* 加载动画 */
+.loading{text-align:center;padding:20px;color:var(--text3)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 提示气泡 */
+.toast{position:fixed;top:60px;right:20px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;z-index:999;animation:slideIn .3s;max-width:300px}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
+.toast.info{border-color:var(--blue)}
+
+/* 突破特效 */
+@keyframes breakthroughFlash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+.breakthrough-overlay{position:fixed;inset:0;background:radial-gradient(circle at center,rgba(245,158,11,.3),transparent 70%);z-index:300;pointer-events:none;animation:breakthroughFlash 2s ease-out forwards}
+.breakthrough-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--gold),#fbbf24,var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;z-index:301;animation:breakthroughTextAnim 2.5s ease-out forwards;text-align:center;text-shadow:0 0 20px rgba(245,158,11,.5)}
+@keyframes breakthroughTextAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}50%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1) translateY(-30px)}}
+
+/* 模态框 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:18px;color:var(--gold);margin-bottom:12px}
+.modal .close-btn{float:right;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer}
+
+/* 移动端适配 - 平板 */
+@media(max-width:900px){
+  .main-layout{flex-direction:column;height:auto;min-height:calc(100vh - 52px)}
+  .left-panel{width:100%;min-width:auto;max-height:none;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border);flex-shrink:0}
+  .left-panel .cult-card{min-width:160px;border-bottom:none;border-right:1px solid var(--border)}
+  .left-panel .panel-title{display:none}
+  .left-panel .stats-list{display:flex;gap:8px;min-width:200px;border-bottom:none}
+  .left-panel .stat-row{flex-direction:column;align-items:center;padding:4px;min-width:50px}
+  .left-panel .skill-list{min-width:120px}
+  .left-panel .equipment-list{display:none}
+  .right-panel{width:100%;min-width:auto;max-height:50vh;border-left:none;border-top:1px solid var(--border)}
+  .center-panel{min-height:50vh}
+}
+
+/* 移动端适配 - 手机 */
+@media(max-width:600px){
+  /* 顶栏紧凑 */
+  .top-bar{padding:6px 8px;gap:4px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .top-bar .logo{font-size:15px;flex-shrink:0}
+  .stat-chip{font-size:11px;padding:3px 8px;border-radius:16px;flex-shrink:0}
+  .stat-chip .icon{font-size:12px}
+  .top-bar .actions{flex-shrink:0}
+  .top-bar .actions button{padding:6px 10px;font-size:12px;border-radius:6px}
+
+  /* 主布局：左面板折叠为紧凑水平条 */
+  .main-layout{flex-direction:column;height:auto}
+  .left-panel{
+    flex-direction:row;flex-wrap:nowrap;overflow-x:auto;
+    border-right:none;border-bottom:1px solid var(--border);
+    max-height:64px;min-height:64px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    background:linear-gradient(90deg,var(--panel),var(--panel2));
+  }
+  .left-panel::-webkit-scrollbar{display:none}
+  .left-panel .panel-title{display:none}
+  .left-panel .cult-card{
+    min-width:80px;padding:4px 8px;border-bottom:none;border-right:1px solid var(--border);
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+  }
+  .realm-name{font-size:13px!important;line-height:1.2}
+  .realm-sub{font-size:9px;margin-top:0}
+  .exp-bar{margin-top:3px;height:3px;border-radius:2px}
+  .exp-text{font-size:8px;margin-top:1px}
+  .left-panel .stats-list{
+    display:flex;gap:0;min-width:auto;padding:4px 6px;border-bottom:none;
+    align-items:center;
+  }
+  .left-panel .stat-row{
+    flex-direction:column;align-items:center;padding:2px 5px;min-width:auto;
+    font-size:10px;
+  }
+  .left-panel .stat-row .label{font-size:9px}
+  .left-panel .stat-row .value{font-size:11px;font-weight:700}
+  .left-panel .skill-list{
+    display:flex;min-width:auto;padding:4px;gap:3px;align-items:center;
+    border-bottom:none;
+  }
+  .skill-tag{padding:2px 5px;font-size:9px;margin:0}
+  .left-panel .equipment-list{display:none}
+
+  /* 中间区域 */
+  .center-panel{flex:1;display:flex;flex-direction:column;min-height:0}
+  .narration-area{flex:1;padding:8px;font-size:13px;min-height:25vh}
+  .msg .bubble{padding:8px 10px;font-size:13px;line-height:1.5;max-width:94%}
+  .msg .label{font-size:9px}
+
+  /* 快捷操作按钮 - 横向滚动，更大触控区 */
+  .options-area{padding:4px 6px;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .options-area::-webkit-scrollbar{display:none}
+  .opt-btn{
+    font-size:12px;padding:8px 12px;border-radius:6px;
+    min-height:40px;display:flex;align-items:center;justify-content:center;
+    white-space:nowrap;flex-shrink:0;
+  }
+
+  /* 输入区域 */
+  .input-area{padding:6px;border-top:1px solid var(--border)}
+  .input-area input{padding:8px 10px;font-size:15px;border-radius:6px}
+  .input-area button{
+    padding:8px 14px;font-size:13px;border-radius:6px;
+    min-height:40px;min-width:50px;
+  }
+
+  /* 右侧面板 */
+  .right-panel{
+    width:100%;min-width:auto;border-left:none;
+    border-top:1px solid var(--border);
+    max-height:40vh;display:flex;flex-direction:column;
+  }
+  .tab-bar{flex-shrink:0}
+  .tab-btn{padding:8px 4px;font-size:11px;min-height:36px}
+
+  /* 地图连接按钮 */
+  .conn-btn{padding:5px 10px;font-size:11px;min-height:32px}
+  .map-current{padding:6px 8px}
+  .loc-name{font-size:13px}
+  .loc-desc{font-size:11px}
+
+  /* NPC列表 */
+  .npc-item{padding:6px;min-height:40px}
+  .npc-avatar{width:26px;height:26px;font-size:11px}
+  .npc-info .npc-name{font-size:11px}
+  .npc-info .npc-role{font-size:9px}
+
+  /* 背包格子 */
+  .inv-grid{grid-template-columns:repeat(5,1fr);gap:2px}
+  .inv-item{font-size:13px}
+
+  /* 区域列表 */
+  .region-item{padding:5px 6px;font-size:11px}
+
+  /* 商店/模态框 */
+  .modal{width:95%;padding:12px;border-radius:10px}
+  .modal h3{font-size:15px}
+
+  /* Toast */
+  .toast{top:48px;right:8px;left:8px;max-width:none}
+}
+</style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<div class="top-bar">
+  <div class="logo">⚔️ 修仙世界</div>
+  <div class="stat-chip"><span class="icon">🏰</span> <span class="val" id="top-location">起始村庄</span></div>
+  <div class="stat-chip"><span class="icon">⭐</span> <span class="val" id="top-realm">炼气·1层</span></div>
+  <div class="stat-chip"><span class="icon">🕐</span> <span class="val" id="top-time">早晨</span></div>
+  <div class="stat-chip"><span class="icon">🌤</span> <span class="val" id="top-weather">晴朗</span></div>
+  <div class="actions">
+    <button onclick="saveGame()">💾 保存</button>
+    <button onclick="showHelp()">❓ 帮助</button>
+  </div>
+</div>
+
+<!-- 主布局 -->
+<div class="main-layout">
+  <!-- 左侧面板 -->
+  <div class="left-panel">
+    <!-- 修仙信息 -->
+    <div class="cult-card">
+      <div class="realm-name" id="realm-name">炼气</div>
+      <div class="realm-sub" id="realm-sub">第1层</div>
+      <div class="exp-bar"><div class="exp-fill" id="exp-fill" style="width:0%"></div></div>
+      <div class="exp-text" id="exp-text">经验: 0/100</div>
+    </div>
+
+    <!-- 属性 -->
+    <div class="panel-title">📊 属性</div>
+    <div class="stats-list">
+      <div class="stat-row"><span class="label">❤️ 生命</span><span class="value hp" id="stat-hp">100</span></div>
+      <div class="stat-row"><span class="label">💧 灵力</span><span class="value mp" id="stat-mp">50</span></div>
+      <div class="stat-row"><span class="label">⚔️ 攻击</span><span class="value atk" id="stat-atk">10</span></div>
+      <div class="stat-row"><span class="label">🛡️ 防御</span><span class="value def" id="stat-def">5</span></div>
+      <div class="stat-row"><span class="label">💰 金币</span><span class="value gold-stat" id="stat-gold">100</span></div>
+      <div class="stat-row"><span class="label">💎 灵石</span><span class="value" style="color:var(--cyan)" id="stat-stones">0</span></div>
+    </div>
+
+    <!-- 技能 -->
+    <div class="panel-title">✨ 技能</div>
+    <div class="skill-list" id="skill-list"></div>
+
+    <!-- 装备 -->
+    <div class="panel-title">🗡️ 装备</div>
+    <div class="stats-list equipment-list" id="equipment-list">
+      <div class="stat-row"><span class="label">武器</span><span class="value" id="equip-weapon" style="color:var(--text3)">无</span></div>
+      <div class="stat-row"><span class="label">护甲</span><span class="value" id="equip-armor" style="color:var(--text3)">无</span></div>
+    </div>
+  </div>
+
+  <!-- 中间主区域 -->
+  <div class="center-panel">
+    <div class="narration-area" id="narration-area"></div>
+    <div class="options-area" id="options-area"></div>
+    <div class="input-area">
+      <input type="text" id="player-input" placeholder="输入你的行动..." onkeydown="if(event.key==='Enter')sendInput()">
+      <button onclick="sendInput()">发送</button>
+    </div>
+  </div>
+
+  <!-- 右侧面板 -->
+  <div class="right-panel">
+    <div class="tab-bar">
+      <div class="tab-btn active" onclick="switchTab('map')">🗺️ 地图</div>
+      <div class="tab-btn" onclick="switchTab('npcs')">👤 NPC</div>
+      <div class="tab-btn" onclick="switchTab('inv')">🎒 背包</div>
+      <div class="tab-btn" onclick="switchTab('quests')">📜 任务</div>
+    </div>
+
+    <!-- 地图 -->
+    <div class="tab-content active" id="tab-map">
+      <div class="map-section">
+        <div class="map-current">
+          <div class="loc-name" id="loc-name">起始村庄</div>
+          <div class="loc-desc" id="loc-desc">一个宁静的修仙者聚集小村</div>
+          <div class="loc-danger">危险等级：<span class="danger-stars" id="loc-danger">⭐</span></div>
+        </div>
+        <div class="panel-title" style="padding:0 0 6px">可前往</div>
+        <div class="map-connections" id="map-connections"></div>
+        <div class="panel-title" style="padding:8px 0 6px">已知区域</div>
+        <div id="map-all-regions" style="display:flex;flex-direction:column;gap:3px"></div>
+      </div>
+    </div>
+
+    <!-- NPC -->
+    <div class="tab-content" id="tab-npcs">
+      <div class="npc-section" id="npc-section"></div>
+    </div>
+
+    <!-- 背包 -->
+    <div class="tab-content" id="tab-inv">
+      <div class="inv-section">
+        <div class="panel-title" style="padding:0 0 6px">物品</div>
+        <div class="inv-grid" id="inv-grid"></div>
+        <div style="margin-top:12px;display:flex;gap:6px">
+          <button class="opt-btn" style="flex:1" onclick="showShop()">🏪 商店</button>
+          <button class="opt-btn" style="flex:1" onclick="showContentStats()">📊 内容库</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务 -->
+    <div class="tab-content" id="tab-quests">
+      <div class="quest-section" id="quest-section">
+        <div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">暂无任务</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// 全局状态
+let gameState = null;
+let combatState = null;
+let currentDialogue = null;
+let isProcessing = false;
+
+// API 调用（带超时）
+async function api(endpoint, method = 'GET', body = null) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s超时
+    const opts = { method, headers: { 'Content-Type': 'application/json' }, signal: controller.signal };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`/api${endpoint}`, opts);
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.error('API Error:', e);
+    if (e.name === 'AbortError') {
+      showToast('请求超时，请重试', 'error');
+      return { success: false, error: '请求超时' };
+    }
+    showToast('网络错误，请重试', 'error');
+    return { success: false, error: e.message };
+  }
+}
+
+// 初始化游戏
+async function initGame() {
+  addMessage('system', '正在连接修仙世界...');
+
+  // 先检查服务器健康状态
+  try {
+    const health = await api('/health', 'GET');
+    if (!health.status) {
+      addMessage('system', '⚠️ 服务器未就绪，正在等待...');
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  } catch(e) {
+    // 服务器可能还没启动，继续尝试
+  }
+
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      addMessage('system', attempt > 1 ? `🔄 重试连接 (${attempt}/${maxRetries})...` : '');
+      const result = await api('/init', 'POST');
+      if (result.success) {
+        gameState = result.world_state;
+        if (!gameState.map_info && result.map_info) {
+          gameState.map_info = result.map_info.region || {};
+        }
+        updateUI();
+        if (result.narration) addMessage('narrator', result.narration);
+        addMessage('system', '✨ 修仙世界已启动，输入行动开始冒险！');
+        showQuickActions();
+        return;
+      } else {
+        if (attempt < maxRetries) {
+          addMessage('system', `⚠️ ${result.error || '初始化失败'}，${3 - attempt}s 后重试...`);
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        addMessage('system', '❌ 初始化失败：' + (result.error || '未知错误'));
+        showRetryButton();
+      }
+    } catch (e) {
+      if (attempt < maxRetries) {
+        addMessage('system', `⚠️ 连接异常，${3 - attempt}s 后重试...`);
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+      addMessage('system', '❌ 连接失败：' + (e.message || '网络错误'));
+      showRetryButton();
+    }
+  }
+}
+
+function showRetryButton() {
+  const opts = document.getElementById('options-area');
+  opts.innerHTML = '<button class="opt-btn" onclick="initGame()">🔄 重新连接</button>';
+}
+
+// 发送输入
+async function sendInput() {
+  const input = document.getElementById('player-input');
+  const text = input.value.trim();
+  if (!text || isProcessing) return;
+
+  input.value = '';
+  isProcessing = true;
+  showProcessing(true);
+
+  if (currentDialogue) {
+    await continueDialogue(text);
+  } else {
+    addMessage('player', text);
+    const result = await api('/input', 'POST', { input: text, type: 'custom' });
+    handleActionResult(result);
+  }
+  showProcessing(false);
+  isProcessing = false;
+}
+
+function showProcessing(show) {
+  const btn = document.querySelector('.input-area button');
+  if (btn) {
+    btn.textContent = show ? '⏳' : '发送';
+    btn.disabled = show;
+  }
+}
+
+// 处理行动结果
+function handleActionResult(result) {
+  if (!result.success) {
+    addMessage('system', '❌ ' + (result.error || '处理失败'));
+    return;
+  }
+
+  if (result.narration) addMessage('narrator', result.narration);
+  if (result.world_description) addMessage('narrator', result.world_description);
+  if (result.new_quest) {
+    const q = result.new_quest.quest;
+    addMessage('reward', `📜 新任务：${q.title}\n${q.description}`);
+  }
+  if (result.breakthrough) {
+    addMessage('reward', result.breakthrough.message);
+    showBreakthroughEffect(result.breakthrough.new_realm || '新境界');
+  }
+  if (result.current_state) {
+    gameState = result.current_state;
+    // 确保 map_info 存在
+    if (!gameState.map_info && result.map_info) {
+      gameState.map_info = result.map_info.region || result.map_info || {};
+    }
+    updateUI();
+  }
+
+  // 检查是否遭遇战斗
+  if (result.encounter && result.encounter.type === 'combat') {
+    const enemy = result.encounter.enemy;
+    startCombat(enemy);
+  }
+
+  showQuickActions();
+}
+
+// 快速操作按钮
+function showQuickActions() {
+  const opts = document.getElementById('options-area');
+  opts.innerHTML = '';
+
+  if (combatState) {
+    showCombatOptions();
+    return;
+  }
+
+  if (currentDialogue) return; // 对话中不显示快捷操作
+
+  const actions = [
+    { text: '⚔️ 战斗', action: () => startRandomCombat() },
+    { text: '🧘 修炼', action: () => meditate() },
+    { text: '💬 对话', action: () => startDialogue() },
+    { text: '🗺️ 探索', action: () => doExplore() },
+    { text: '🌍 事件', action: () => triggerWorldEvent() },
+    { text: '📜 任务', action: () => switchTab('quests') },
+    { text: '🏪 商店', action: () => showShop() },
+    { text: '🎒 背包', action: () => switchTab('inv') },
+    { text: '🧩 生成', action: () => generateContent() },
+    { text: '👤 新NPC', action: () => spawnNpc() },
+  ];
+
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = a.text;
+    btn.onclick = a.action;
+    opts.appendChild(btn);
+  });
+}
+
+// ====== 战斗系统 ======
+async function startCombat(enemyData) {
+  const result = await api('/combat/start', 'POST', { enemy: enemyData });
+  if (result.success) {
+    combatState = result;
+    addMessage('combat', `⚔️ 战斗开始！VS ${enemyData.name}`);
+    addMessage('combat', `❤️ 敌人生命: ${enemyData.hp}/${enemyData.max_hp} | 💧 灵力: ${enemyData.mp}/${enemyData.max_mp}`);
+    showCombatOptions();
+  }
+}
+
+async function startRandomCombat() {
+  const result = await api('/combat/start', 'POST', {});
+  if (result.success) {
+    combatState = result;
+    const enemy = result.enemy;
+    addMessage('combat', `⚔️ 遭遇了 ${enemy.name}！`);
+    addMessage('combat', `❤️ 敌人: ${enemy.hp}HP | ⚔️ ${enemy.atk}ATK | 🛡️ ${enemy.def}DEF`);
+    showCombatOptions();
+  }
+}
+
+function showCombatOptions() {
+  const opts = document.getElementById('options-area');
+  opts.innerHTML = '';
+
+  if (!combatState) return;
+
+  const player = gameState?.cultivation || {};
+  const skills = player.skills || [];
+
+  const actions = [
+    { text: '🗡️ 普通攻击', action: () => combatAction('attack'), cls: 'combat-btn' },
+    { text: '🛡️ 防御', action: () => combatAction('defend'), cls: 'combat-btn' },
+    { text: '💊 使用丹药', action: () => combatAction('use_item'), cls: 'combat-btn' },
+    { text: '🏃 逃跑', action: () => combatAction('flee'), cls: 'combat-btn' },
+  ];
+
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn ' + (a.cls || '');
+    btn.textContent = a.text;
+    btn.onclick = a.action;
+    opts.appendChild(btn);
+  });
+
+  // 技能按钮
+  skills.forEach(skill => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn skill-btn';
+    btn.textContent = `✨ ${skill}`;
+    btn.onclick = () => combatAction('skill', skill);
+    opts.appendChild(btn);
+  });
+}
+
+async function combatAction(action, skill = null) {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const body = { action };
+  if (skill) body.skill = skill;
+
+  const result = await api('/combat/action', 'POST', body);
+
+  if (result.success && result.log) {
+    result.log.forEach(line => {
+      const type = line.includes('胜利') ? 'reward' : line.includes('失败') ? 'system' : 'combat';
+      addMessage(type, line);
+    });
+  }
+
+  if (result.status === 'victory' || result.status === 'defeat' || result.status === 'fled') {
+    combatState = null;
+    if (result.rewards) {
+      gameState.cultivation = result.exp_result ? { ...gameState.cultivation, ...result.exp_result } : gameState.cultivation;
+    }
+    if (result.player) {
+      gameState.stats.health = result.player.hp;
+      gameState.stats.mana = result.player.mp;
+    }
+    updateUI();
+    setTimeout(() => showQuickActions(), 500);
+  } else {
+    combatState = result;
+    // 更新玩家状态
+    if (result.player) {
+      gameState.stats.health = result.player.hp;
+      gameState.stats.mana = result.player.mp;
+    }
+    updateUI();
+    showCombatOptions();
+  }
+
+  isProcessing = false;
+}
+
+// ====== 修仙系统 ======
+async function meditate() {
+  addMessage('system', '🧘 你盘膝而坐，开始打坐修炼...');
+  const result = await api('/cultivation/meditate', 'POST');
+  if (result.success) {
+    addMessage('narrator', `你沉浸在修炼之中，灵气缓缓涌入体内...`);
+    addMessage('reward', `📊 获得 ${result.exp_gained} 修炼经验，恢复 ${result.mp_restored} 灵力`);
+    if (result.exp_result?.breakthrough) {
+      addMessage('reward', `🎉 突破成功！当前境界：${result.exp_result.new_realm}`);
+      showBreakthroughEffect(result.exp_result.new_realm);
+    }
+    gameState.cultivation = result.cultivation;
+    updateUI();
+  }
+}
+
+// ====== 对话系统 ======
+async function startDialogue() {
+  const result = await api('/dialogue/start', 'POST', {});
+  if (result.success) {
+    currentDialogue = result.dialogue_id;
+    addMessage('npc', `${result.npc_name}：${result.opening_message}`);
+
+    const opts = document.getElementById('options-area');
+    opts.innerHTML = '';
+
+    if (result.dialogue_options) {
+      result.dialogue_options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => continueDialogue(opt);
+        opts.appendChild(btn);
+      });
+    }
+
+    const endBtn = document.createElement('button');
+    endBtn.className = 'opt-btn';
+    endBtn.textContent = '👋 告别';
+    endBtn.onclick = () => endDialogue();
+    opts.appendChild(endBtn);
+  } else {
+    addMessage('system', result.error || '附近没有可以对话的NPC');
+  }
+}
+
+async function continueDialogue(text) {
+  addMessage('player', text);
+  const result = await api('/dialogue/continue', 'POST', {
+    dialogue_id: currentDialogue,
+    input: text
+  });
+
+  if (result.success) {
+    addMessage('npc', result.npc_response);
+
+    if (result.relationship_change && result.relationship_change !== 0) {
+      const change = result.relationship_change > 0 ? '改善' : '恶化';
+      addMessage('system', `💕 关系${change}（当前：${result.relationship}）`);
+    }
+
+    if (result.dialogue_ended) {
+      if (result.closing_message) addMessage('npc', result.closing_message);
+      currentDialogue = null;
+      showQuickActions();
+    } else {
+      const opts = document.getElementById('options-area');
+      opts.innerHTML = '';
+      if (result.dialogue_options) {
+        result.dialogue_options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'opt-btn';
+          btn.textContent = opt;
+          btn.onclick = () => continueDialogue(opt);
+          opts.appendChild(btn);
+        });
+      }
+      const endBtn = document.createElement('button');
+      endBtn.className = 'opt-btn';
+      endBtn.textContent = '👋 告别';
+      endBtn.onclick = () => endDialogue();
+      opts.appendChild(endBtn);
+    }
+  }
+}
+
+async function endDialogue() {
+  if (currentDialogue) {
+    await api('/dialogue/end', 'POST', { dialogue_id: currentDialogue });
+    currentDialogue = null;
+    addMessage('system', '对话结束。');
+    showQuickActions();
+  }
+}
+
+// ====== 探索 ======
+async function doExplore() {
+  addMessage('system', '🔍 你仔细观察四周...');
+  if (isProcessing) return;
+  isProcessing = true;
+  const result = await api('/input', 'POST', { input: '仔细观察周围的环境，寻找有价值的线索或隐藏的宝物', type: 'custom' });
+  handleActionResult(result);
+  isProcessing = false;
+}
+
+// ====== 地图移动 ======
+async function moveTo(location) {
+  addMessage('system', `🚶 正在前往 ${location}...`);
+  const result = await api('/move', 'POST', { target: location });
+  if (result.success) {
+    if (result.narration) addMessage('narrator', result.narration);
+    if (result.current_state) {
+      gameState = result.current_state;
+      // 更新 map_info
+      if (result.region) {
+        gameState.map_info = result.region;
+      }
+    }
+    updateUI();
+    if (result.encounter && result.encounter.type === 'combat') {
+      setTimeout(() => startCombat(result.encounter.enemy), 500);
+    }
+    showQuickActions();
+  } else {
+    addMessage('system', '❌ ' + (result.error || '移动失败'));
+  }
+}
+
+// ====== 世界事件 ======
+async function triggerWorldEvent() {
+  addMessage('system', '🌍 触发世界事件...');
+  const result = await api('/world/event', 'POST');
+  if (result.success) {
+    addMessage('narrator', result.message || '世界发生了变化...');
+    if (result.actions) {
+      result.actions.forEach(a => {
+        if (a.type === 'npc_spawn') addMessage('system', `👤 ${a.data?.message || '新NPC出现'}`);
+        if (a.type === 'event') addMessage('narrator', a.data?.event || '');
+        if (a.type === 'weather_change') addMessage('system', `🌤 ${a.data?.message || '天气变化'}`);
+      });
+    }
+    // 刷新状态
+    const stateResult = await api('/state', 'GET');
+    if (stateResult.success) {
+      gameState = stateResult.state;
+      updateUI();
+    }
+  }
+}
+
+// ====== NPC ======
+async function spawnNpc() {
+  const result = await api('/npcs/spawn', 'POST', {});
+  if (result.success) {
+    addMessage('system', `👤 ${result.message || '新NPC出现'}`);
+    refreshNpcs();
+  }
+}
+
+async function refreshNpcs() {
+  const result = await api('/npcs', 'GET');
+  if (result.success) {
+    const section = document.getElementById('npc-section');
+    section.innerHTML = '';
+    if (result.npcs.length === 0) {
+      section.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">暂无NPC<br><button class="opt-btn" style="margin-top:8px" onclick="spawnNpc()">👤 生成NPC</button></div>';
+      return;
+    }
+    result.npcs.forEach(npc => {
+      // 关系颜色
+      const rel = npc.relationship || 0;
+      let relColor = 'var(--text3)';
+      let relEmoji = '😐';
+      if (rel > 20) { relColor = 'var(--green)'; relEmoji = '😊'; }
+      else if (rel > 0) { relColor = '#86efac'; relEmoji = '🙂'; }
+      else if (rel < -20) { relColor = 'var(--red)'; relEmoji = '😠'; }
+      else if (rel < 0) { relColor = '#fca5a5'; relEmoji = '😕'; }
+
+      const div = document.createElement('div');
+      div.className = 'npc-item';
+      div.innerHTML = `
+        <div class="npc-avatar">${npc.name[0]}</div>
+        <div class="npc-info" style="flex:1;min-width:0">
+          <div class="npc-name">${npc.name}</div>
+          <div class="npc-role">${npc.role || '村民'} | ${npc.location || '未知'}</div>
+        </div>
+        <div style="font-size:11px;color:${relColor};flex-shrink:0">${relEmoji} ${rel > 0 ? '+' : ''}${rel}</div>
+      `;
+      div.onclick = () => startDialogueWithNpc(npc.id);
+      section.appendChild(div);
+    });
+    section.innerHTML += `<div style="text-align:center;padding:8px"><button class="opt-btn" onclick="spawnNpc()">👤 生成新NPC</button></div>`;
+  }
+}
+
+async function startDialogueWithNpc(npcId) {
+  const result = await api('/dialogue/start', 'POST', { npc_id: npcId });
+  if (result.success) {
+    currentDialogue = result.dialogue_id;
+    addMessage('npc', `${result.npc_name}：${result.opening_message}`);
+    const opts = document.getElementById('options-area');
+    opts.innerHTML = '';
+    if (result.dialogue_options) {
+      result.dialogue_options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => continueDialogue(opt);
+        opts.appendChild(btn);
+      });
+    }
+    const endBtn = document.createElement('button');
+    endBtn.className = 'opt-btn';
+    endBtn.textContent = '👋 告别';
+    endBtn.onclick = () => endDialogue();
+    opts.appendChild(endBtn);
+  }
+}
+
+// ====== 背包 ======
+async function refreshInventory() {
+  const result = await api('/inventory', 'GET');
+  if (result.success) {
+    const grid = document.getElementById('inv-grid');
+    grid.innerHTML = '';
+
+    // 统计物品数量
+    const counts = {};
+    result.inventory.forEach(item => {
+      counts[item.name] = (counts[item.name] || 0) + 1;
+    });
+
+    const seen = new Set();
+    result.inventory.forEach(item => {
+      if (seen.has(item.name)) return;
+      seen.add(item.name);
+
+      const icons = {
+        'consumable': '💊', 'material': '📦', 'equipment': '⚔️',
+        'skill_book': '📖', '灵石碎片': '💎', '灵石': '💎', '上品灵石': '💎'
+      };
+      const icon = icons[item.name] || icons[item.type] || '📦';
+
+      const div = document.createElement('div');
+      div.className = 'inv-item';
+      div.setAttribute('data-rarity', item.rarity);
+      div.title = `${item.name} (${item.rarity_name})\n${item.description}`;
+      div.innerHTML = `${icon}${counts[item.name] > 1 ? `<span class="count">×${counts[item.name]}</span>` : ''}`;
+      div.onclick = () => useItem(item.name);
+      grid.appendChild(div);
+    });
+
+    // 装备显示
+    document.getElementById('equip-weapon').textContent = result.equipment?.weapon || '无';
+    document.getElementById('equip-armor').textContent = result.equipment?.armor || '无';
+  }
+}
+
+async function useItem(itemName) {
+  const modal = document.getElementById('modal-content');
+  const info = await api('/inventory', 'GET');
+  const item = info.inventory?.find(i => i.name === itemName);
+  if (!item) return;
+
+  const isEquip = item.type === 'equipment';
+  modal.innerHTML = `
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <h3 style="color:${item.color}">${itemName}</h3>
+    <div style="font-size:13px;color:var(--text2);margin:8px 0">[${item.rarity_name}] ${item.type === 'consumable' ? '消耗品' : item.type === 'equipment' ? '装备' : item.type === 'skill_book' ? '功法秘籍' : '材料'}</div>
+    <div style="font-size:14px;margin:12px 0">${item.description}</div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="opt-btn" style="flex:1" onclick="doUseItem('${itemName}')">${isEquip ? '⚔️ 装备' : '💊 使用'}</button>
+      <button class="opt-btn" style="flex:1;color:var(--gold)" onclick="sellItem('${itemName}')">💰 出售</button>
+    </div>
+  `;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+async function doUseItem(itemName) {
+  closeModal();
+  const result = await api('/inventory/use', 'POST', { item: itemName });
+  if (result.success) {
+    addMessage('system', `使用了 ${itemName}`);
+    if (result.effects) result.effects.forEach(e => addMessage('reward', e));
+    refreshInventory();
+    updateStats();
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+async function sellItem(itemName) {
+  closeModal();
+  const result = await api('/shop/sell', 'POST', { item: itemName });
+  if (result.success) {
+    addMessage('system', `出售了 ${itemName}，获得 ${result.gold_gained} 金币`);
+    showToast(`+${result.gold_gained} 💰`, 'success');
+    refreshInventory();
+    updateStats();
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+// ====== 内容生成 ======
+async function generateContent() {
+  addMessage('system', '🧩 正在后台生成新内容...');
+  showToast('正在生成新物品、敌人和技能...', 'info');
+  const result = await api('/content/generate', 'POST', { type: 'auto', context: '玩家请求生成更多内容' });
+  if (result.success) {
+    const stats = result.stats || {};
+    addMessage('reward', `✨ 内容生成已启动！当前库：物品${stats.items || 0} | 区域${stats.regions || 0} | 敌人${stats.enemies || 0} | 技能${stats.skills || 0}`);
+    // 5秒后刷新商店
+    setTimeout(() => showToast('新内容已生成！', 'success'), 5000);
+  }
+}
+
+async function showContentStats() {
+  const result = await api('/content/stats', 'GET');
+  if (result.success) {
+    const s = result.stats || {};
+    const modal = document.getElementById('modal-content');
+    modal.innerHTML = `
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <h3>📊 内容库统计</h3>
+      <div style="padding:10px 0;font-size:14px;line-height:2">
+        <div>📦 物品：<strong style="color:var(--gold)">${s.items || 0}</strong></div>
+        <div>🗺️ 区域：<strong style="color:var(--cyan)">${s.regions || 0}</strong></div>
+        <div>👾 敌人模板：<strong style="color:var(--red)">${s.enemies || 0}</strong></div>
+        <div>✨ 技能：<strong style="color:var(--purple)">${s.skills || 0}</strong></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="opt-btn" onclick="closeModal();generateContent()">🧩 生成更多内容</button>
+        <button class="opt-btn" onclick="closeModal();generateSpecific('item')">📦 生成物品</button>
+        <button class="opt-btn" onclick="closeModal();generateSpecific('enemy')">👾 生成敌人</button>
+        <button class="opt-btn" onclick="closeModal();generateSpecific('skill')">✨ 生成技能</button>
+      </div>
+    `;
+    document.getElementById('modal-overlay').style.display = 'flex';
+  }
+}
+
+async function generateSpecific(type) {
+  showToast(`正在生成${type}...`, 'info');
+  const result = await api('/content/generate', 'POST', { type: type });
+  if (result.success) {
+    addMessage('reward', `✨ ${type} 类型内容已开始生成！`);
+    setTimeout(() => showToast('内容已生成！', 'success'), 3000);
+  }
+}
+
+// ====== 商店 ======
+async function showShop() {
+  const result = await api('/shop', 'GET');
+  if (!result.success) return;
+
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <h3>🏪 修仙商店 <span style="font-size:14px;color:var(--text3)">💰 ${result.gold} 金币</span></h3>
+    <div style="max-height:400px;overflow-y:auto">
+      ${result.items.map(item => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;color:${item.color}">${item.name} <span style="font-size:11px;color:var(--text3)">[${item.rarity_name}]</span></div>
+            <div style="font-size:12px;color:var(--text3)">${item.description}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">
+              ${item.type === 'equipment' ? (item.subtype === 'weapon' ? '🗡️ 武器' : '🛡️ 护甲') : item.type === 'consumable' ? '💊 消耗品' : item.type === 'skill_book' ? '📖 秘籍' : '📦 材料'}
+            </div>
+          </div>
+          <button class="opt-btn" onclick="buyItem('${item.name}')" ${item.price > result.gold ? 'disabled style="opacity:.4"' : ''} style="flex-shrink:0;margin-left:8px">
+            💰 ${item.price}
+          </button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+async function buyItem(itemName) {
+  const result = await api('/shop/buy', 'POST', { item: itemName });
+  if (result.success) {
+    showToast(`购买了 ${itemName}`, 'success');
+    refreshInventory();
+    updateStats();
+    showShop(); // 刷新商店
+  } else {
+    showToast(result.error, 'error');
+  }
+}
+
+// ====== 任务 ======
+async function refreshQuests() {
+  const result = await api('/quests', 'GET');
+  if (!result.success) return;
+
+  const section = document.getElementById('quest-section');
+  section.innerHTML = '';
+
+  const allQuests = [...(result.active || []), ...(result.completed || [])];
+  if (allQuests.length === 0) {
+    section.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">暂无任务</div>';
+    return;
+  }
+
+  allQuests.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'quest-item';
+    const isCompleted = q.status === 'completed';
+    div.innerHTML = `
+      <div class="quest-title">${isCompleted ? '✅' : '📋'} ${q.title}</div>
+      <div class="quest-desc">${q.description || ''}</div>
+      ${!isCompleted ? `<div class="quest-progress"><div class="quest-progress-fill" style="width:${q.progress || 0}%"></div></div>` : ''}
+    `;
+    section.appendChild(div);
+  });
+}
+
+// ====== UI更新 ======
+function updateUI() {
+  if (!gameState) return;
+
+  // 顶部栏
+  document.getElementById('top-location').textContent = gameState.current_location || '未知';
+  document.getElementById('top-time').textContent = gameState.world_time || '未知';
+  document.getElementById('top-weather').textContent = gameState.weather || '未知';
+
+  const cult = gameState.cultivation || {};
+  document.getElementById('top-realm').textContent = cult.realm_name || '炼气·1层';
+
+  // 修仙面板
+  document.getElementById('realm-name').textContent = (cult.realm_name || '炼气').split('·')[0];
+  document.getElementById('realm-sub').textContent = `第${cult.sub_level || 1}层`;
+
+  const expPct = cult.exp_to_next ? ((cult.experience || 0) / cult.exp_to_next * 100) : 0;
+  document.getElementById('exp-fill').style.width = expPct + '%';
+  document.getElementById('exp-text').textContent = `经验: ${cult.experience || 0}/${cult.exp_to_next || 100}`;
+
+  // 属性
+  updateStats();
+
+  // 技能
+  const skillList = document.getElementById('skill-list');
+  skillList.innerHTML = '';
+  (cult.skills || []).forEach(s => {
+    const span = document.createElement('span');
+    span.className = 'skill-tag';
+    span.textContent = s;
+    skillList.appendChild(span);
+  });
+
+  // 地图
+  updateMap();
+
+  // NPC
+  refreshNpcs();
+
+  // 背包
+  refreshInventory();
+
+  // 任务
+  refreshQuests();
+}
+
+function updateStats() {
+  const stats = gameState?.stats || {};
+  const cult = gameState?.cultivation || {};
+  const bonus = cult.realm_index !== undefined ? getCultBonus(cult) : { hp: 0, mp: 0, atk: 0, def: 0 };
+
+  document.getElementById('stat-hp').textContent = (stats.health || 100) + bonus.hp;
+  document.getElementById('stat-mp').textContent = (stats.mana || 50) + bonus.mp;
+  document.getElementById('stat-atk').textContent = 10 + bonus.atk;
+  document.getElementById('stat-def').textContent = 5 + bonus.def;
+  document.getElementById('stat-gold').textContent = stats.gold || 0;
+  document.getElementById('stat-stones').textContent = cult.spirit_stones || 0;
+}
+
+function getCultBonus(cult) {
+  const realms = [
+    { hp: 50, mp: 30, atk: 5, def: 3 },
+    { hp: 120, mp: 80, atk: 15, def: 10 },
+    { hp: 250, mp: 180, atk: 35, def: 25 },
+    { hp: 500, mp: 350, atk: 80, def: 55 },
+    { hp: 1000, mp: 700, atk: 180, def: 120 },
+    { hp: 2000, mp: 1500, atk: 400, def: 280 },
+    { hp: 5000, mp: 3500, atk: 1000, def: 700 },
+    { hp: 10000, mp: 7000, atk: 2500, def: 1800 },
+  ];
+  const r = realms[cult.realm_index || 0];
+  const m = 1 + ((cult.sub_level || 1) - 1) * 0.1;
+  return { hp: Math.floor(r.hp * m), mp: Math.floor(r.mp * m), atk: Math.floor(r.atk * m), def: Math.floor(r.def * m) };
+}
+
+function updateMap() {
+  const mapInfo = gameState?.map_info || {};
+  document.getElementById('loc-name').textContent = gameState?.current_location || '未知';
+  document.getElementById('loc-desc').textContent = mapInfo.description || '';
+
+  const danger = mapInfo.danger_level || 1;
+  // 危险等级颜色
+  const dangerClass = danger <= 2 ? 'danger-low' : danger <= 4 ? 'danger-mid' : danger <= 6 ? 'danger-high' : 'danger-extreme';
+  document.getElementById('loc-danger').innerHTML = '危险等级：<span class="danger-stars ' + dangerClass + '">' + '⭐'.repeat(Math.min(danger, 7)) + '</span>';
+
+  // 可前往的连接
+  const connDiv = document.getElementById('map-connections');
+  connDiv.innerHTML = '';
+  (mapInfo.connections || []).forEach(loc => {
+    const btn = document.createElement('button');
+    btn.className = 'conn-btn';
+    btn.textContent = `→ ${loc}`;
+    btn.onclick = () => moveTo(loc);
+    connDiv.appendChild(btn);
+  });
+
+  // 已知区域列表（高亮当前位置，可点击连接）
+  const allRegionsDiv = document.getElementById('map-all-regions');
+  if (allRegionsDiv) {
+    allRegionsDiv.innerHTML = '';
+    const allRegions = mapInfo.all_regions || {};
+    const currentLoc = gameState?.current_location || '';
+    const connections = mapInfo.connections || [];
+
+    Object.entries(allRegions).forEach(([name, info]) => {
+      const isCurrent = name === currentLoc;
+      const isReachable = connections.includes(name);
+      const d = info.danger_level || 1;
+      const dClass = d <= 2 ? 'danger-low' : d <= 4 ? 'danger-mid' : d <= 6 ? 'danger-high' : 'danger-extreme';
+      const div = document.createElement('div');
+      div.className = 'region-item' + (isCurrent ? ' current' : '') + (isReachable && !isCurrent ? ' clickable' : '');
+      div.innerHTML = `
+        <span class="region-dot"></span>
+        <span>${name}</span>
+        ${isReachable && !isCurrent ? '<span class="region-reachable">可达</span>' : ''}
+        <span class="region-danger ${dClass}">${'⭐'.repeat(Math.min(d, 3))}</span>
+      `;
+      if (isReachable && !isCurrent) {
+        div.onclick = () => moveTo(name);
+      }
+      allRegionsDiv.appendChild(div);
+    });
+  }
+}
+
+// ====== 消息系统 ======
+function addMessage(type, text) {
+  const area = document.getElementById('narration-area');
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+
+  const labels = {
+    system: '⚙️ 系统',
+    narrator: '📖 旁白',
+    player: '🧑 你',
+    npc: '💬 NPC',
+    combat: '⚔️ 战斗',
+    reward: '🎁 奖励'
+  };
+
+  div.innerHTML = `
+    ${type !== 'system' ? `<div class="label">${labels[type] || ''}</div>` : ''}
+    <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+  `;
+
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ====== Tab切换 ======
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  const tabNames = { map: 0, npcs: 1, inv: 2, quests: 3 };
+  document.querySelectorAll('.tab-btn')[tabNames[tab]]?.classList.add('active');
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+}
+
+// ====== 工具函数 ======
+function showToast(msg, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+// 突破境界特效
+function showBreakthroughEffect(realmName) {
+  // 闪光遮罩
+  const overlay = document.createElement('div');
+  overlay.className = 'breakthrough-overlay';
+  document.body.appendChild(overlay);
+  // 文字
+  const text = document.createElement('div');
+  text.className = 'breakthrough-text';
+  text.innerHTML = `🎉 突破！<br>${realmName}`;
+  document.body.appendChild(text);
+  setTimeout(() => { overlay.remove(); text.remove(); }, 3000);
+}
+
+async function saveGame() {
+  const result = await api('/save', 'POST');
+  if (result.success) showToast('游戏已保存', 'success');
+  else showToast(result.error || '保存失败', 'error');
+}
+
+function showHelp() {
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <h3>🎮 修仙世界 - 帮助</h3>
+    <div style="font-size:14px;line-height:1.8">
+      <p><strong>🏰 移动</strong> - 点击右侧地图中的地点按钮前往新区域（可能遭遇战斗）</p>
+      <p><strong>⚔️ 战斗</strong> - 选择攻击/技能/防御/逃跑，击败敌人获得经验和金币</p>
+      <p><strong>💬 对话</strong> - 点击NPC列表中的角色开始AI对话，影响关系</p>
+      <p><strong>🧘 修炼</strong> - 打坐修炼获得经验，突破境界解锁新技能</p>
+      <p><strong>🎒 背包</strong> - 点击物品查看详情，可使用或出售</p>
+      <p><strong>🏪 商店</strong> - 购买丹药、装备、功法秘籍</p>
+      <p><strong>🧩 生成</strong> - 让AI自动生成更多物品、敌人、技能、区域</p>
+      <p><strong>👤 新NPC</strong> - 随机生成新NPC到当前区域</p>
+      <p><strong>📊 内容库</strong> - 查看当前内容库统计，按需生成指定类型</p>
+      <p><strong>🌍 事件</strong> - 触发世界动态事件（天气变化/NPC出现等）</p>
+      <p><strong>⌨️ 自由输入</strong> - 在底部输入框输入任何行动描述</p>
+      <hr style="border-color:var(--border);margin:10px 0">
+      <p style="color:var(--text3)">💡 提示：经常保存进度。点击"生成"可以让AI创造更多内容！打坐修炼提升境界是变强的关键。</p>
+    </div>
+  `;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+// 启动
+initGame();
+</script>
+</body>
+</html>
