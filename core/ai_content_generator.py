@@ -256,23 +256,80 @@ danger越高属性按1+(level-1)*0.5倍率增长"""
         """检查并确保有足够的动态内容可用，不够则自动生成"""
         stats = self.db.get_stats()
 
-        # 确保至少有一定数量的物品
-        if stats["items"] < 10:
-            for item_type in ["consumable", "material", "skill_book"]:
+        # 确保至少有一定数量的物品（目标 20+）
+        if stats["items"] < 20:
+            for item_type in ["consumable", "material", "skill_book", "equipment"]:
                 existing = self.db.get_all_items(item_type)
-                if len(existing) < 3:
+                target = 5 if item_type != "equipment" else 3
+                while len(existing) < target:
                     try:
-                        await self.generate_item(item_type, realm_level, context)
-                    except Exception:
-                        pass
+                        item = await self.generate_item(item_type, realm_level, context)
+                        if item:
+                            existing.append(item)
+                            print(f"✅ AI 生成物品：{item.get('name', '未知')}")
+                    except Exception as e:
+                        print(f"生成物品失败：{e}")
+                        break
 
-        # 确保有敌人模板
-        if stats["enemies"] < 5:
-            for dtype in ["妖兽", "灵兽", "魔修"]:
+        # 确保有敌人模板（目标 15+）
+        if stats["enemies"] < 15:
+            enemy_types = ["妖兽", "灵兽", "魔修", "散修", "妖王", "守护者"]
+            for dtype in enemy_types:
+                existing = self.db.get_enemy_templates(realm_level)
+                # 过滤出指定类型的敌人
+                existing = [e for e in existing if e.get('type') == dtype]
+                target = 3
+                while len(existing) < target:
+                    try:
+                        enemy = await self.generate_enemy_template(dtype, realm_level, context)
+                        if enemy:
+                            existing.append(enemy)
+                            print(f"✅ AI 生成敌人：{enemy.get('name_suffix', '未知')}")
+                    except Exception as e:
+                        print(f"生成敌人失败：{e}")
+                        break
+
+        # 确保有技能（目标 30+）
+        if stats["skills"] < 30:
+            for skill_type in ["attack", "defense", "recover"]:
+                existing = self.db.get_all_skills()
+                existing_of_type = [s for s in existing.values() if s.get("type") == skill_type]
+                target = 10
+                while len(existing_of_type) < target:
+                    try:
+                        skill = await self.generate_skill(realm_level, skill_type, context)
+                        if skill:
+                            existing_of_type.append(skill)
+                            print(f"✅ AI 生成技能：{skill.get('name', '未知')}")
+                    except Exception as e:
+                        print(f"生成技能失败：{e}")
+                        break
+
+        # 确保有地图区域（目标 10+）
+        if stats["regions"] < 10:
+            existing = self.db.get_all_regions()
+            target = 10
+            while len(existing) < target:
                 try:
-                    await self.generate_enemy_template(dtype, realm_level, context)
-                except Exception:
-                    pass
+                    # 随机选择一个已有区域作为连接点
+                    connect_to = ""
+                    if existing:
+                        connect_to = list(existing.keys())[random.randint(0, len(existing) - 1)]
+                    region = await self.generate_region(
+                        connect_to=connect_to,
+                        danger_range=(max(1, realm_level - 1), min(7, realm_level + 1)),
+                        context=context
+                    )
+                    if region:
+                        existing[region["name"]] = region
+                        print(f"✅ AI 生成区域：{region.get('name', '未知')}")
+                except Exception as e:
+                    print(f"生成区域失败：{e}")
+                    break
+
+        final_stats = self.db.get_stats()
+        print(f"📊 内容库统计：物品={final_stats['items']}, 敌人={final_stats['enemies']}, 技能={final_stats['skills']}, 区域={final_stats['regions']}")
+
 
     def _parse_json_response(self, response: str) -> Optional[Dict[str, Any]]:
         """解析AI返回的JSON，处理各种边界情况"""

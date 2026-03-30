@@ -6,7 +6,7 @@ from core.ai_service import AIService
 from core.database import GameDatabase
 from core.ai_content_generator import AIContentGenerator
 from memory.memory_manager import MemoryManager
-from core.cultivation import CultivationState, MAP_REGIONS, SKILL_LIBRARY
+from core.cultivation import CultivationState
 from core.combat_system import CombatSystem, CombatEntity
 from core.item_system import ItemSystem
 from agents.game_master_agent import GameMasterAgent
@@ -493,14 +493,10 @@ class GameEngine:
             if "weather" in world_state:
                 self.game_state.weather = world_state["weather"]
 
-    # ====== 地图系统 ======
+        # ====== 地图系统 ======
     def _get_all_regions(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有区域（合并内置 + 数据库AI生成）"""
-        regions = dict(MAP_REGIONS)  # 内置区域
-        if self.db:
-            db_regions = self.db.get_all_regions()
-            regions.update(db_regions)
-        return regions
+        """获取所有区域 - 使用 CultivationState 的方法（优先数据库）"""
+        return self.game_state.cultivation.get_all_regions()
 
     def get_map_info(self) -> Dict[str, Any]:
         """获取地图信息"""

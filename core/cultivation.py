@@ -142,12 +142,22 @@ class CultivationState:
         self._db = db
 
     def _get_skill_library(self) -> Dict[str, Any]:
-        """获取技能库 - 合并内置和数据库技能"""
-        merged = dict(SKILL_LIBRARY)
+        """获取技能库 - 优先数据库，无数据时使用内置"""
         if self._db:
             db_skills = self._db.get_all_skills()
-            merged.update(db_skills)
-        return merged
+            if db_skills:
+                return db_skills
+        # 数据库为空时返回内置技能库作为 fallback
+        return dict(SKILL_LIBRARY)
+
+    def get_all_regions(self) -> Dict[str, Dict[str, Any]]:
+        """获取所有地图区域 - 优先数据库，无数据时使用内置"""
+        if self._db:
+            db_regions = self._db.get_all_regions()
+            if db_regions:
+                return db_regions
+        # 数据库为空时返回内置地图作为 fallback
+        return dict(MAP_REGIONS)
 
     @property
     def realm_name(self) -> str:
