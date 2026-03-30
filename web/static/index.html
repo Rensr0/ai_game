@@ -300,8 +300,128 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   .modal h3{font-size:15px}
 
   /* Toast */
-  .toast{top:48px;right:8px;left:8px;max-width:none}
+  .toast{top:48px;right:8px;left:8px;max-width:none
+  /* 战斗界面优化 - 更大的按钮 */
+  .opt-btn.combat-btn{
+    min-height:44px;font-size:13px;font-weight:600;
+    border-width:2px!important;
+  }
+  
+  /* 对话输入框优化 */
+  .input-area input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 2px rgba(245,158,11,.2);
+  }
+  
+  /* 模态框按钮优化 - 更大触控区 */
+  .modal button{
+    min-height:44px;font-size:14px;margin:4px 0;
+    border-radius:8px;padding:10px 16px;
+  }
+  
+  /* 技能按钮优化 */
+  .opt-btn.skill-btn{
+    min-height:40px;font-size:12px;
+  }
+  
+  /* 保存/帮助按钮优化 */
+  .top-bar .actions button{
+    min-height:36px;
+  }
+  
+  /* 地图区域列表优化 - 更好的点击反馈 */
+  .region-item.clickable:active{
+    background:rgba(59,130,246,.25);
+    transform:scale(.98);
+  }
+  
+  /* NPC 列表优化 - 更好的点击反馈 */
+  .npc-item:active{
+    background:rgba(168,85,247,.2);
+    transform:scale(.98);
+  }
+  
+  /* 背包物品点击优化 */
+  .inv-item:active{
+    transform:scale(.95);
+  }
+
 }
+
+  /* 战斗界面优化 - 更大的按钮 */
+  .opt-btn.combat-btn{
+    min-height:44px;font-size:13px;font-weight:600;
+    border-width:2px!important;
+  }
+  
+  /* 对话输入框优化 */
+  .input-area input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 2px rgba(245,158,11,.2);
+  }
+  
+  /* 模态框按钮优化 - 更大触控区 */
+  .modal button{
+    min-height:44px;font-size:14px;margin:4px 0;
+    border-radius:8px;padding:10px 16px;
+  }
+  
+  /* 技能按钮优化 */
+  .opt-btn.skill-btn{
+    min-height:40px;font-size:12px;
+  }
+  
+  /* 保存/帮助按钮优化 */
+  .top-bar .actions button{
+    min-height:36px;
+  }
+  
+  /* 地图区域列表优化 - 更好的点击反馈 */
+  .region-item.clickable:active{
+    background:rgba(59,130,246,.25);
+    transform:scale(.98);
+  }
+  
+  /* NPC 列表优化 - 更好的点击反馈 */
+  .npc-item:active{
+    background:rgba(168,85,247,.2);
+    transform:scale(.98);
+  }
+  
+  /* 背包物品点击优化 */
+  .inv-item:active{
+    transform:scale(.95);
+  }
+
+}
+
+/* ====== 移动端触摸优化 ====== */
+@media(max-width:600px){
+  /* 禁用双击缩放 */
+  *{touch-action:manipulation}
+  
+  /* 点击高亮效果 */
+  button:active,.opt-btn:active,.conn-btn:active{
+    transform:scale(.95);
+    opacity:.8;
+  }
+  
+  /* 平滑滚动 */
+  html{scroll-behavior:smooth}
+  
+  /* 自定义滚动条样式 */
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--gold)}
+  
+  /* 防止长按选择文本 */
+  .opt-btn,.conn-btn,.npc-item,.region-item,.inv-item{
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+}
+
 </style>
 </head>
 <body>
