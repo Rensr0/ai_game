@@ -9,6 +9,8 @@ from memory.memory_manager import MemoryManager
 from core.cultivation import CultivationState
 from core.combat_system import CombatSystem, CombatEntity
 from core.item_system import ItemSystem
+from core.achievement_system import AchievementSystem
+from core.daily_quest_system import DailyQuestSystem
 from agents.game_master_agent import GameMasterAgent
 from agents.narrator_agent import NarratorAgent
 from agents.npc_agent import NPCAgent
@@ -135,6 +137,10 @@ class GameEngine:
         # 系统（传入数据库引用）
         self.combat_system = CombatSystem(db=self.db)
         self.item_system = ItemSystem(db=self.db)
+        
+        # 成就和每日任务系统
+        self.achievement_system = AchievementSystem()
+        self.daily_quest_system = DailyQuestSystem()
 
     async def initialize(self):
         self.ai_service = AIService()

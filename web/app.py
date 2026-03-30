@@ -605,6 +605,55 @@ def api_reload():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
+
+# ====== 成就系统 API ======
+@app.route('/api/achievements', methods=['GET'])
+def api_achievements():
+    """获取成就列表"""
+    engine = ensure_engine()
+    return jsonify({
+        "success": True,
+        "achievements": engine.achievement_system.get_all_achievements(),
+        "progress": engine.achievement_system.get_progress(),
+    })
+
+
+@app.route('/api/achievements/unlocked', methods=['GET'])
+def api_achievements_unlocked():
+    """获取已解锁成就"""
+    engine = ensure_engine()
+    return jsonify({
+        "success": True,
+        "unlocked": engine.achievement_system.get_unlocked_achievements(),
+    })
+
+
+# ====== 每日任务 API ======
+@app.route('/api/daily-quests', methods=['GET'])
+def api_daily_quests():
+    """获取每日任务"""
+    engine = ensure_engine()
+    return jsonify({
+        "success": True,
+        "summary": engine.daily_quest_system.get_summary(),
+    })
+
+
+@app.route('/api/daily-quests/claim', methods=['POST'])
+def api_daily_quest_claim():
+    """领取每日任务奖励"""
+    engine = ensure_engine()
+    data = request.json
+    quest_id = data.get("quest_id", "")
+    
+    result = engine.daily_quest_system.claim_reward(quest_id, engine.game_state)
+    if "error" in result:
+        return jsonify({"success": False, **result}), 400
+    
+    return jsonify({"success": True, **result})
+
+
 @app.route('/api/save/load', methods=['POST'])
 def api_load():
     """加载存档"""
