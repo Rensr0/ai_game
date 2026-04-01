@@ -74,14 +74,33 @@
 ### 下一步
 1. ✅ Git 推送成功 (Phase 1 - 2026-03-29 10:45)
 2. ✅ Git 推送成功 (Phase 3 - 2026-03-31 05:45)
-3. ✅ Phase 4 完成：可玩性增强 (2026-03-31)
-4. 准备 Phase 5: 测试与完善
+3. ✅ Git 推送成功 (Phase 4 - 2026-04-01 10:20)
+4. 进行中：Phase 5 - 前端集成与测试
 
 ### Phase 4 完成详情
 - ✅ 成就系统：core/achievement_system.py (14KB, 40+ 成就)
 - ✅ 每日任务：core/daily_quest_system.py (12KB, 5 类任务)
 - ✅ API 集成：web/app.py 添加成就和每日任务端点
 - ✅ 游戏引擎集成：game_engine.py 初始化新系统
+
+### Phase 5: 前端集成与测试
+
+- [x] 5.1 前端成就界面（标签页 + 进度展示 + 分类显示）
+- [x] 5.2 前端每日任务界面（标签页 + 进度条 + 领取按钮）
+- [x] 5.3 成就解锁通知（toast 提示）
+- [ ] 5.4 电脑端完整测试
+- [ ] 5.5 移动端完整测试
+- [ ] 5.6 Bug 修复
+
+### 新增 API 端点
+
+#### 成就系统
+- `GET /api/achievements` - 获取所有成就列表和进度
+- `GET /api/achievements/unlocked` - 获取已解锁成就
+
+#### 每日任务
+- `GET /api/daily-quests` - 获取每日任务摘要
+- `POST /api/daily-quests/claim` - 领取任务奖励
 
 #### 4.1 随机事件系统
 - 世界事件触发（天降宝藏、妖兽潮、秘境开启）

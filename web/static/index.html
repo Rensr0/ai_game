@@ -491,6 +491,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
       <div class="tab-btn" onclick="switchTab('npcs')">👤 NPC</div>
       <div class="tab-btn" onclick="switchTab('inv')">🎒 背包</div>
       <div class="tab-btn" onclick="switchTab('quests')">📜 任务</div>
+      <div class="tab-btn" onclick="switchTab('daily')">📅 每日</div>
+      <div class="tab-btn" onclick="switchTab('achievements')">🏆 成就</div>
     </div>
 
     <!-- 地图 -->
@@ -529,6 +531,20 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <div class="tab-content" id="tab-quests">
       <div class="quest-section" id="quest-section">
         <div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">暂无任务</div>
+      </div>
+    </div>
+
+    <!-- 每日任务 -->
+    <div class="tab-content" id="tab-daily">
+      <div class="quest-section" id="daily-quest-section">
+        <div class="loading" id="daily-loading">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 成就 -->
+    <div class="tab-content" id="tab-achievements">
+      <div class="quest-section" id="achievements-section">
+        <div class="loading" id="achievements-loading">加载中...</div>
       </div>
     </div>
   </div>
@@ -1453,6 +1469,159 @@ function showHelp() {
   `;
   document.getElementById('modal-overlay').style.display = 'flex';
 }
+
+
+// ====== 每日任务系统 ======
+async function loadDailyQuests() {
+  const container = document.getElementById('daily-quest-section');
+  container.innerHTML = '<div class="loading">加载中...</div>';
+  
+  try {
+    const result = await api('/daily-quests', 'GET');
+    if (!result.success) {
+      container.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">加载失败</div>';
+      return;
+    }
+    
+    const summary = result.summary;
+    let html = `
+      <div style="padding:10px;background:linear-gradient(135deg,#1a3a2a,#153025);border:1px solid var(--green);border-radius:10px;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:700;color:var(--gold)">📅 每日任务</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">进度：${summary.completed}/${summary.total}</div>
+        <div style="font-size:11px;color:var(--green);margin-top:4px">🔥 ${summary.streak_bonus}</div>
+      </div>
+    `;
+    
+    if (summary.quests && summary.quests.length > 0) {
+      summary.quests.forEach(quest => {
+        const progressPercent = (quest.progress / quest.target) * 100;
+        const isCompleted = quest.completed;
+        const difficultyColors = {
+          'easy': '#22c55e',
+          'medium': '#f59e0b',
+          'hard': '#ef4444'
+        };
+        const difficultyColor = difficultyColors[quest.difficulty] || '#9ca3af';
+        
+        html += `
+          <div class="quest-item" style="border-left:3px solid ${difficultyColor}">
+            <div class="quest-title">${quest.name} ${isCompleted ? '✅' : ''}</div>
+            <div class="quest-desc">${quest.description}</div>
+            <div class="quest-progress" style="margin-top:6px;height:6px">
+              <div class="quest-progress-fill" style="width:${progressPercent}%;background:${isCompleted ? 'var(--green)' : difficultyColor}"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;display:flex;justify-content:space-between">
+              <span>${quest.progress}/${quest.target}</span>
+              <span>🎁 ${formatReward(quest.reward)}</span>
+            </div>
+            ${isCompleted ? `<button class="opt-btn" style="margin-top:6px;width:100%;font-size:11px;padding:6px" onclick="claimDailyQuest('${quest.id}')">领取奖励</button>` : ''}
+          </div>
+        `;
+      });
+    } else {
+      html += '<div style="text-align:center;color:var(--text3);padding:20px">暂无每日任务</div>';
+    }
+    
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">加载失败</div>';
+  }
+}
+
+async function claimDailyQuest(questId) {
+  const result = await api('/daily-quests/claim', 'POST', { quest_id: questId });
+  if (result.success) {
+    showToast(`✅ 领取奖励：${result.rewards.join(', ')}`, 'success');
+    loadDailyQuests();
+    // 刷新状态栏
+    refreshGame();
+  } else {
+    showToast(result.error || '领取失败', 'error');
+  }
+}
+
+// ====== 成就系统 ======
+async function loadAchievements() {
+  const container = document.getElementById('achievements-section');
+  container.innerHTML = '<div class="loading">加载中...</div>';
+  
+  try {
+    const result = await api('/achievements', 'GET');
+    if (!result.success) {
+      container.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">加载失败</div>';
+      return;
+    }
+    
+    const progress = result.progress;
+    let html = `
+      <div style="padding:10px;background:linear-gradient(135deg,#3a2a1a,#302515);border:1px solid var(--gold);border-radius:10px;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:700;color:var(--gold)">🏆 成就进度</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">解锁：${progress.unlocked}/${progress.total}</div>
+        <div style="margin-top:6px;background:#1e293b;border-radius:4px;height:8px;overflow:hidden">
+          <div style="width:${progress.completion_rate}%;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .5s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--gold);margin-top:4px;text-align:right">${progress.completion_rate}%</div>
+      </div>
+    `;
+    
+    // 按类别分组
+    const categories = {
+      'realm': '🧘 境界',
+      'combat': '⚔️ 战斗',
+      'collection': '🎒 收集',
+      'social': '👥 社交',
+      'secret': '❓ 隐藏'
+    };
+    
+    for (const [catId, catName] of Object.entries(categories)) {
+      const catAchievements = result.achievements.filter(a => a.category === catId);
+      if (catAchievements.length === 0) continue;
+      
+      html += `<div class="panel-title" style="padding:8px 0">${catName}</div>`;
+      
+      catAchievements.forEach(ach => {
+        const isUnlocked = ach.unlocked;
+        const isHidden = ach.hidden && !isUnlocked;
+        
+        html += `
+          <div class="quest-item" style="${isHidden ? 'opacity:0.5;border:1px dashed var(--border)' : ''}">
+            <div class="quest-title" style="color:${isUnlocked ? 'var(--gold)' : 'var(--text2)'}">
+              ${isUnlocked ? '✅' : (isHidden ? '❓' : '🔒')} ${ach.name}
+            </div>
+            <div class="quest-desc">${isHidden ? '???' : ach.description}</div>
+            ${isUnlocked ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">🎁 ${formatReward(ach.reward)}</div>` : ''}
+            ${isUnlocked && ach.unlock_time ? `<div style="font-size:9px;color:var(--text3);margin-top:2px">解锁时间：${ach.unlock_time.split('T')[0]}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+    
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">加载失败</div>';
+  }
+}
+
+// 格式化奖励显示
+function formatReward(reward) {
+  const parts = [];
+  if (reward.exp) parts.push(`${reward.exp} exp`);
+  if (reward.spirit_stones) parts.push(`${reward.spirit_stones}灵石`);
+  if (reward.item) parts.push(reward.item);
+  return parts.join(', ') || '无';
+}
+
+// 修改 switchTab 函数，加载对应内容
+const originalSwitchTab = switchTab;
+switchTab = function(tab) {
+  originalSwitchTab(tab);
+  if (tab === 'daily') {
+    loadDailyQuests();
+  } else if (tab === 'achievements') {
+    loadAchievements();
+  }
+};
+
 
 // 启动
 initGame();
